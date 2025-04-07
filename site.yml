@@ -1,0 +1,7 @@
+- name: Configurar servidor completo
+  hosts: servers
+  become: yes
+  roles:
+    - common
+    - docker
+    - security

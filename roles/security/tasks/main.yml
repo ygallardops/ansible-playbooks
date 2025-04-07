@@ -1,0 +1,14 @@
+- name: Instalar Fail2Ban
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Habilitar UFW
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: Permitir SSH
+  ufw:
+    rule: allow
+    name: OpenSSH
