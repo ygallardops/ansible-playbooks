@@ -18,3 +18,4 @@ ansible-playbook -i inventory.ini site.yml
 ```
 
 > Requiere acceso por SSH y permisos sudo en el host.
+
