@@ -1,0 +1,6 @@
+---
+docker_arch: "{{ ansible_architecture }}"
+repo_distro: "redhat"
+
+docker_python_package: "python3-pip"
+docker_service_name: docker

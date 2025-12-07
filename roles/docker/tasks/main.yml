@@ -1,20 +1,214 @@
-- name: Instalar dependencias de Docker
-  apt:
+---
+# 0. Fail fast
+- name: Abort if OS is not supported
+  ansible.builtin.fail:
+    msg: >
+      The 'docker' role only supports: Debian, RedHat, Archlinux, Suse, Alpine.
+      Detected: {{ ansible_os_family | default('UNKNOWN') }}
+  when:
+    - (ansible_os_family is defined)
+    - ansible_os_family not in ['Debian', 'RedHat', 'Archlinux', 'Suse', 'Alpine']
+  tags: [docker, docker:checks]
+
+# 0.1 Alpine Bootstrap (installs python so facts can be gathered)
+# Nota: Esto asume que el playbook tiene gather_facts: false o usas 'gather_subset: min'
+# ensure it can run apk or use an earlier bootstrap step executed as root.
+- name: Bootstrap Python on Alpine (only if needed)
+  raw: apk add --no-cache python3 py3-pip
+  when: ansible_os_family == 'Alpine' and (ansible_python is not defined)
+  register: alpine_bootstrap
+  changed_when: "'installed' in alpine_bootstrap.stdout or alpine_bootstrap.rc == 0"
+  tags: [docker, bootstrap]
+
+# 1. Carga de variables
+- name: Load OS-specific variables
+  ansible.builtin.include_vars:
+    file: "{{ lookup('ansible.builtin.first_found', lookup_params) }}"
+  vars:
+    lookup_params:
+      files:
+        - "{{ ansible_os_family }}.yml"
+        - "default.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags: [docker, docker:vars]
+
+# 2. Instalacion de dependencias previas
+- name: Install Docker prerequisites
+  ansible.builtin.package:
     name:
-      - apt-transport-https
-      - ca-certificates
       - curl
-      - software-properties-common
+      - git
+      - ca-certificates
+      - "{{ docker_python_package | default('python3-docker') }}"
     state: present
+  become: yes
+  tags: [docker, docker:install]
 
-- name: Agregar GPG key de Docker
-  shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+# ---------------------------------------------------------
+# BLOQUE DEBIAN / UBUNTU (Gestion segura de Repositorios)
+# ---------------------------------------------------------
+- name: Setup Docker repository (Debian/Ubuntu)
+  block:
+    - name: Install apt transport packages
+      ansible.builtin.apt:
+        name: ['apt-transport-https', 'ca-certificates', 'gnupg', 'lsb-release']
+        state: present
 
-- name: Agregar repo de Docker
-  shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+    - name: Create directory for Docker GPG key
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Instalar Docker
-  apt:
+    - name: Download Docker's official GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/{{ repo_distro }}/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: yes
+
+    - name: Add Docker repository (Signed)
+      ansible.builtin.apt_repository:
+        repo: >
+          deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ repo_distro }}
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: yes
+
+  when: ansible_os_family == 'Debian'
+  become: yes
+  tags: [docker, docker:repo]
+
+# ---------------------------------------------------------
+# BLOQUE REDHAT / CENTOS (Gestion de Repositorios)
+# ---------------------------------------------------------
+- name: Setup Docker repository (RedHat family)
+  ansible.builtin.yum_repository:
     name: docker-ce
-    update_cache: yes
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    enabled: yes
+    gpgcheck: yes
+    gpgkey: https://download.docker.com/linux/centos/gpg
+  when: ansible_os_family == 'RedHat'
+  become: yes
+  tags: [docker, docker:repo]
+
+# ---------------------------------------------------------
+# BLOQUE ARCH (Gestion de Repositorios)
+# ---------------------------------------------------------
+- name: Install Docker (Arch - pacman)
+  community.general.pacman:
+    name: "{{ arch_packages | default(['docker', 'docker-compose']) }}"
     state: present
+  when: ansible_os_family == 'Archlinux'
+  become: yes
+  tags: [docker, docker:install]
+
+# ---------------------------------------------------------
+# BLOQUE SUSE (zypper) (Gestion de Repositorios)
+# ---------------------------------------------------------
+- name: Install Docker (SUSE - zypper)
+  community.general.zypper:
+    name: "{{ suse_packages | default(['docker', 'docker-compose']) }}"
+    state: present
+  when: ansible_os_family == 'Suse'
+  become: yes
+  tags: [docker, docker:install]
+
+# ---------------------------------------------------------
+# BLOQUE ALPINE LINUX (apk) (Gestion de Repositorios)
+# ---------------------------------------------------------
+- name: Install Docker (Alpine - apk)
+  community.general.apk:
+    name: "{{ alpine_packages | default(['docker', 'docker-cli', 'containerd']) }}"
+    state: present
+  when: ansible_os_family == 'Alpine'
+  become: yes
+  tags: [docker, docker:install]
+
+
+# 3. Instalacion del plugin Compose
+# Caso A: Debian y RedHat (Docker oficial)
+- name: Install Docker Engine (Debian/RedHat)
+  ansible.builtin.package:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  when: ansible_os_family in ['Debian', 'RedHat']
+  notify: restart docker
+  become: yes
+  tags: [docker, docker:install]
+
+# Caso B: Archlinux (Community repo)
+- name: Install Docker (Arch)
+  community.general.pacman:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  when: ansible_os_family == 'Archlinux'
+  notify: restart docker
+  become: yes
+  tags: [docker, docker:install]
+
+# Caso C: Suse (Zypper)
+- name: Install Docker (SUSE)
+  community.general.zypper:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  when: ansible_os_family == 'Suse'
+  notify: restart docker
+  become: yes
+  tags: [docker, docker:install]
+
+# Caso D: Alpine (APK)
+- name: Install Docker (Alpine)
+  community.general.apk:
+    name:
+      - docker
+      - docker-cli
+      - containerd
+      - docker-cli-compose # En Alpine a veces es este nombre o docker-compose
+    state: present
+  when: ansible_os_family == 'Alpine'
+  notify: restart docker
+  become: yes
+  tags: [docker, docker:install]
+
+# 4. Configuracion de seguridad y logs (Daemon)
+- name: Configure Docker Daemon (Log Rotation)
+  ansible.builtin.copy:
+    content: "{{ docker_daemon_options | to_nice_json }}"
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker
+  become: yes
+  tags: [docker, docker:config]
+
+# 5. Gestion de usuarios y servicio
+- name: Ensure Docker service is running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+  become: yes
+  tags: [docker, docker:service]
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users | default([ansible_user_id]) }}"
+  become: yes
+  tags: [docker, docker:users]

@@ -1,0 +1,13 @@
+---
+cron_service: crond
+
+common_packages:
+  - tzdata
+  - python3
+  - curl
+  - git
+  - htop
+  - vim
+  - iproute2
+  - ca-certificates
+  - dcron

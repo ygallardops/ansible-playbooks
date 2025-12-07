@@ -1,12 +1,90 @@
-- name: Actualizar apt
-  apt:
-    update_cache: yes
-    upgrade: dist
+---
+# 0. Fail fast si el sistema operativo no está soportado
+- name: Abort if OS is not supported by this role
+  ansible.builtin.fail:
+    msg: >
+      El rol 'common' solo soporta sistemas operativos de familias:
+      Debian, RedHat, Archlinux, Suse y Alpine.
+      Detectado: {{ ansible_os_family }}.
+  when: ansible_os_family not in ['Debian', 'RedHat', 'Archlinux', 'Suse', 'Alpine']
+  tags: [common, common:checks]
 
-- name: Instalar paquetes básicos
-  apt:
-    name:
-      - git
-      - curl
-      - vim
+# 1. Carga de variables especificas del SO
+# Busca primero 'Debian.yml', luego 'RedHat.yml', y si falla usa 'default.yml'
+- name: Load OS-specific variables
+  ansible.builtin.include_vars:
+    file: "{{ lookup('ansible.builtin.first_found', lookup_params) }}"
+  vars:
+    lookup_params:
+      files:
+        - "{{ ansible_os_family }}.yml"
+        - "default.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags: [common, common:vars]
+
+# 2. Configuracion especifica por cada SO (Update Cache)
+# APT
+- name: Update apt cache (Debian/Ubuntu)
+  ansible.builtin.apt:
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+  become: yes
+  tags: [common, common:cache]
+
+# DNF (RHEL8+, Fedora, Alma, Rocky)
+- name: Update dnf cache (RedHat family)
+  ansible.builtin.dnf:
+    update_cache: yes
+  when: ansible_os_family == 'RedHat'
+  become: yes
+  tags: [common, common:cache]
+
+# Arch
+- name: Update pacman cache (Arch)
+  community.general.pacman:
+    update_cache: yes
+  when: ansible_os_family == 'Archlinux'
+  become: yes
+  tags: [common, common:cache]
+
+# SUSE
+- name: Refresh zypper repos (SUSE)
+  community.general.zypper:
+    update_cache: yes
+  when: ansible_os_family == 'Suse'
+  become: yes
+  tags: [common, common:cache]
+
+# Alpine
+- name: Update apk cache (Alpine)
+  community.general.apk:
+    update_cache: yes
+  when: ansible_os_family == 'Alpine'
+  become: yes
+  tags: [common, common:cache]
+
+# 3. Upgrade opcional (interruptor)
+- name: Upgrade all packages (optional)
+  ansible.builtin.package:
+    name: "*"
+    state: latest
+  when: common_upgrade_system | default(false) | bool
+  become: yes
+  tags: [common, upgrade]
+
+# 4. Instalación de paquetes
+- name: Install essential common packages
+  ansible.builtin.package:
+    name: "{{ common_packages }}"
     state: present
+  become: yes
+  tags: [common, common:install]
+
+# 5. Configuracion de zona horaria con handler
+- name: Set system timezone to UTC
+  ansible.builtin.timezone:
+    name: UTC
+  become: yes
+  notify: restart cron
+  tags: [common, common:config, common:time]

@@ -1,0 +1,10 @@
+---
+cron_service: cron
+
+common_packages:
+  - curl
+  - git
+  - htop
+  - vim
+  - iproute2
+  - ca-certificates

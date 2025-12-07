@@ -1,7 +1,14 @@
-- name: Configurar servidor completo
-  hosts: servers
+---
+- name: Base Server Configuration
+  hosts: all
   become: yes
   roles:
+    - bootstrap
     - common
-    - docker
     - security
+
+- name: Docker Host Configuration
+  hosts: all
+  become: yes
+  roles:
+    - docker

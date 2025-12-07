@@ -1,0 +1,34 @@
+---
+# Usuarios que seran agregados al grupo 'docker'
+# Puede sobrescribirse desde el inventario
+docker_users:
+  - "{{ ansible_user_id }}"
+
+
+# Configuracion del daemon de Docker
+# Este archivo se convierte en /etc/docker/daemon.json
+docker_daemon_options:
+
+  # Driver de almacenamiento recomendado para Linux moderno
+  storage-driver: "overlay2"
+
+  # Directorio de datos (fijarlo explicitamente)
+  data-root: "/var/lib/docker"
+
+  # Configuracion de logging y rotacion (evita que /var se llene)
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+
+  # Mejora compatibilidad con systemd y contenedores rootless
+  exec-opts:
+    - "native.cgroupdriver=systemd"
+
+  # Acelera arranque y reduce DNS misconfigurations internas
+  dns:
+    - "8.8.8.8"
+    - "1.1.1.1"
+
+  # Habilita experimental features si te interesa buildx avanzado
+  experimental: false
