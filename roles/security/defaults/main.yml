@@ -1,0 +1,25 @@
+---
+# ============================================
+# CONFIGURACION SSH (sobrescribible)
+# ============================================
+security_ssh_port: 22
+security_ssh_permit_root_login: "no"
+security_ssh_password_authentication: "no"
+security_ssh_service_name: ssh  # # Se ajusta automaticamente segun OS
+
+# ============================================
+# FIREWALL
+# ============================================
+security_enable_firewall: true
+security_allowed_ports:
+  - 22
+  - 80
+  - 443
+
+# ============================================
+# FAIL2BAN
+# ============================================
+security_enable_fail2ban: true
+
+# Tiempo de espera antes de reiniciar servicios criticos
+security_restart_delay: 2

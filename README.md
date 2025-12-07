@@ -8,7 +8,10 @@ Actualmente soporta y detecta automáticamente: **Debian/Ubuntu, RHEL/CentOS, Ar
 *   **Soporte Multi-OS**: Detección automática de familia de SO y carga dinámica de variables (`Debian.yml`, `RedHat.yml`, etc.).
 *   **Fail-Fast Strategy**: Validación temprana del sistema operativo para evitar ejecuciones erróneas.
 *   **Aprovisionamiento Automatizado**: Instalación de paquetes esenciales (`common`) y gestión de repositorios.
-*   **Refuerzo de seguridad**: Implementa prácticas de seguridad estándar (firewall UFW, fail2ban, hardening de SSH).
+*   **Seguridad Avanzada**:
+    * **Firewall Inteligente**: Abstracción automática entre `ufw` (Debian/Ubuntu) y `firewalld` (RHEL/CentOS).
+    * **SSH Hardening**: Configuración parametrizable de puertos y permisos de root.
+    * **Fail2Ban**: Instalación y activación automática para prevenir intrusiones.
 *   **Docker Production-Ready**:
     * Instalación segura usando repositorios oficiales (sin `apt-key` deprecated).
     * Soporte para arquitecturas `amd64` y `arm64`.
@@ -76,6 +79,16 @@ El proyecto sigue una arquitectura modular separando lógica (`tasks`), datos in
 | `docker_users` | Lista de usuarios a añadir al grupo docker | `['ansible_user_id']` |
 | `common_upgrade_system` | Si es `true`, actualiza todos los paquetes del sistema | `false` |
 | `docker_daemon_options` | Configuración JSON para `daemon.json` | `{ "log-driver": "json-file"... }` |
+
+### Variables de Seguridad (Role: Security)
+
+| Variable | Descripción | Default |
+| :--- | :--- | :--- |
+| `security_ssh_port` | Puerto donde escuchará SSH (se abre en firewall automáticamente) | `22` |
+| `security_ssh_permit_root_login` | Permitir acceso root por SSH (`yes`/`no`) | `"no"` |
+| `security_enable_firewall` | Activar gestión de firewall | `true` |
+| `security_allowed_ports` | Lista de puertos TCP a abrir (ej. `[22, 8080]`) | `[22, 80, 443]` |
+| `security_enable_fail2ban` | Instalar y activar servicio Fail2Ban | `true` |
 
 ## CI/CD
 

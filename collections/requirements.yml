@@ -1,4 +1,7 @@
 ---
 collections:
   - name: community.general
-    version: "*"
+    version: "*"  # Mantiene tu configuración actual para general
+
+  - name: ansible.posix
+    version: "*"  # Agregamos posix para soportar 'firewalld' en RedHat/CentOS

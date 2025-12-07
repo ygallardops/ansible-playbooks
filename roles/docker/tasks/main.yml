@@ -10,9 +10,9 @@
     - ansible_os_family not in ['Debian', 'RedHat', 'Archlinux', 'Suse', 'Alpine']
   tags: [docker, docker:checks]
 
-# 0.1 Alpine Bootstrap (installs python so facts can be gathered)
+# 0.1 Alpine Bootstrap (Instala Python para que se pueda recopilar información (facts))
 # Nota: Esto asume que el playbook tiene gather_facts: false o usas 'gather_subset: min'
-# ensure it can run apk or use an earlier bootstrap step executed as root.
+# Asegurate de que se pueda ejecutar APKs o utiliza un paso de arranque (bootstrap) previo ejecutado como root.
 - name: Bootstrap Python on Alpine (only if needed)
   ansible.builtin.raw: apk add --no-cache python3 py3-pip
   when: ansible_os_family == 'Alpine' and (ansible_python is not defined)

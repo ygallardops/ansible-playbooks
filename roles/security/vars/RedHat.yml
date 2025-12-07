@@ -1,0 +1,10 @@
+---
+security_firewall_package: firewalld
+security_firewall_service: firewalld
+security_ssh_service_name: sshd
+security_fail2ban_service: fail2ban
+
+security_firewalld_service_map:
+  22: ssh
+  80: http
+  443: https

@@ -1,36 +1,108 @@
 ---
-- name: Install UFW firewall
-  ansible.builtin.apt:
-    name: ufw
+# ============================================
+# 1. Carga de variables
+# ============================================
+- name: Load OS-specific variables
+  ansible.builtin.include_vars:
+    file: "{{ item }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_os_family }}.yml"
+        - "default.yml"
+      paths:
+        - "../vars"
+  tags: [security, security:vars]
+
+# ============================================
+# 2. Instalacion de paquetes de seguridad
+# ============================================
+- name: Install security packages
+  ansible.builtin.package:
+    name:
+      - "{{ security_firewall_package }}"
+      - fail2ban
     state: present
+  become: true
+  tags: [security, security:install]
 
-- name: Allow SSH connections through UFW
-  community.general.ufw:
-    rule: allow
-    name: OpenSSH
+# ============================================
+# 3. Hardening de SSH
+# ============================================
+- name: Ensure sshd_config exists
+  ansible.builtin.stat:
+    path: /etc/ssh/sshd_config
+  register: sshd_conf_file
 
-- name: Enable UFW firewall
-  community.general.ufw:
-    state: enabled
-
-- name: Install Fail2Ban
-  ansible.builtin.apt:
-    name: fail2ban
-    state: present
-
-- name: Ensure Fail2Ban service is running
-  ansible.builtin.service:
-    name: fail2ban
-    state: started
-    enabled: true
-
-- name: Harden SSH configuration
+- name: Configure SSH Daemon
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     validate: 'sshd -t -f %s'
   loop:
-    - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
-    - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?PermitRootLogin',         line: "PermitRootLogin {{ security_ssh_permit_root_login }}" }
+    - { regexp: '^#?PasswordAuthentication',  line: "PasswordAuthentication {{ security_ssh_password_authentication }}" }
+    - { regexp: '^#?Port',                    line: "Port {{ security_ssh_port }}" }
+  when: sshd_conf_file.stat.exists
   notify: Restart ssh
+  become: true
+  tags: [security, security:ssh]
+
+# ============================================
+# 4. Configuracion Firewall: UFW (Debian)
+# ============================================
+- name: Configure UFW (Debian/Ubuntu)
+  when:
+    - ansible_os_family == 'Debian'
+    - security_enable_firewall | bool
+  become: true
+  tags: [security, security:firewall]
+  block:
+    - name: Allow defined ports in UFW
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: "{{ security_allowed_ports }}"
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+
+# ============================================
+# 5. Configuracion Firewall: Firewalld (RedHat)
+# ============================================
+- name: Configure Firewalld (RedHat/CentOS)
+  when:
+    - ansible_os_family == 'RedHat'
+    - security_enable_firewall | bool
+  block:
+    - name: Allow defined ports in Firewalld
+      ansible.posix.firewalld:
+        service: "{{ security_firewalld_service_map[item] | default(omit) }}"
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+        zone: public
+      loop: "{{ security_allowed_ports }}"
+      notify: Reload firewalld
+
+    - name: Ensure Firewalld is running
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: true
+  become: true
+  tags: [security, security:firewall]
+
+# ============================================
+# 6. Fail2Ban
+# ============================================
+- name: Ensure Fail2Ban is running
+  ansible.builtin.service:
+    name: "{{ security_fail2ban_service }}"
+    state: started
+    enabled: true
+  when: security_enable_fail2ban | bool
+  become: true
+  tags: [security, security:fail2ban]

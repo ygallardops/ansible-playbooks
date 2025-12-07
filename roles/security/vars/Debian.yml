@@ -1,0 +1,6 @@
+---
+security_firewall_package: ufw
+security_firewall_service: ufw
+security_ssh_service_name: ssh
+security_fail2ban_service: fail2ban
+security_firewalld_service_map: {}

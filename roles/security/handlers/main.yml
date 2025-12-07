@@ -1,6 +1,25 @@
 ---
 - name: Restart ssh
   ansible.builtin.service:
-    name: sshd
+    name: "{{ security_ssh_service_name }}"
+    state: restarted
+  become: true
+  delay: "{{ security_restart_delay }}"
+
+- name: Reload firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: reloaded
+  become: true
+
+- name: Restart firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: restarted
+  become: true
+
+- name: Restart fail2ban
+  ansible.builtin.service:
+    name: "{{ security_fail2ban_service }}"
     state: restarted
   become: true
