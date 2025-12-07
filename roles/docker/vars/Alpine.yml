@@ -1,6 +1,6 @@
 ---
 docker_arch: "{{ ansible_architecture }}"
-repo_distro: "alpine"
+docker_repo_distro: "alpine"
 
 docker_python_package: "py3-pip"
 

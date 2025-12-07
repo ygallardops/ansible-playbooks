@@ -1,3 +1,3 @@
 - name: Install Python on Alpine
-  raw: apk add --no-cache python3
-  when: ansible_os_family == 'Alpine'
+  ansible.builtin.raw: apk add --no-cache python3 py3-pip
+  changed_when: false  # Le decimos que asuma que no cuenta como cambio de estado critico

@@ -1,6 +1,6 @@
 ---
 docker_arch: "{{ ansible_architecture }}"
-repo_distro: "arch"
+docker_repo_distro: "arch"
 
 docker_python_package: "python-pip"
 docker_service_name: docker

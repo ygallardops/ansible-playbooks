@@ -14,9 +14,9 @@
 # Nota: Esto asume que el playbook tiene gather_facts: false o usas 'gather_subset: min'
 # ensure it can run apk or use an earlier bootstrap step executed as root.
 - name: Bootstrap Python on Alpine (only if needed)
-  raw: apk add --no-cache python3 py3-pip
+  ansible.builtin.raw: apk add --no-cache python3 py3-pip
   when: ansible_os_family == 'Alpine' and (ansible_python is not defined)
-  register: alpine_bootstrap
+  register: docker_alpine_bootstrap
   changed_when: "'installed' in alpine_bootstrap.stdout or alpine_bootstrap.rc == 0"
   tags: [docker, bootstrap]
 
@@ -42,7 +42,7 @@
       - ca-certificates
       - "{{ docker_python_package | default('python3-docker') }}"
     state: present
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # ---------------------------------------------------------
@@ -63,23 +63,23 @@
 
     - name: Download Docker's official GPG key
       ansible.builtin.get_url:
-        url: https://download.docker.com/linux/{{ repo_distro }}/gpg
+        url: https://download.docker.com/linux/{{ docker_repo_distro }}/gpg
         dest: /etc/apt/keyrings/docker.asc
         mode: '0644'
-        force: yes
+        force: true
 
     - name: Add Docker repository (Signed)
       ansible.builtin.apt_repository:
         repo: >
           deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc]
-          https://download.docker.com/linux/{{ repo_distro }}
+          https://download.docker.com/linux/{{ docker_repo_distro }}
           {{ ansible_distribution_release }} stable
         filename: docker
         state: present
-        update_cache: yes
+        update_cache: true
 
   when: ansible_os_family == 'Debian'
-  become: yes
+  become: true
   tags: [docker, docker:repo]
 
 # ---------------------------------------------------------
@@ -90,11 +90,11 @@
     name: docker-ce
     description: Docker CE Stable - $basearch
     baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
-    enabled: yes
+    enabled: true
     gpgcheck: yes
     gpgkey: https://download.docker.com/linux/centos/gpg
   when: ansible_os_family == 'RedHat'
-  become: yes
+  become: true
   tags: [docker, docker:repo]
 
 # ---------------------------------------------------------
@@ -105,7 +105,7 @@
     name: "{{ arch_packages | default(['docker', 'docker-compose']) }}"
     state: present
   when: ansible_os_family == 'Archlinux'
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # ---------------------------------------------------------
@@ -116,7 +116,7 @@
     name: "{{ suse_packages | default(['docker', 'docker-compose']) }}"
     state: present
   when: ansible_os_family == 'Suse'
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # ---------------------------------------------------------
@@ -127,7 +127,7 @@
     name: "{{ alpine_packages | default(['docker', 'docker-cli', 'containerd']) }}"
     state: present
   when: ansible_os_family == 'Alpine'
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 
@@ -144,7 +144,7 @@
     state: present
   when: ansible_os_family in ['Debian', 'RedHat']
   notify: restart docker
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # Caso B: Archlinux (Community repo)
@@ -156,7 +156,7 @@
     state: present
   when: ansible_os_family == 'Archlinux'
   notify: restart docker
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # Caso C: Suse (Zypper)
@@ -168,7 +168,7 @@
     state: present
   when: ansible_os_family == 'Suse'
   notify: restart docker
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # Caso D: Alpine (APK)
@@ -182,7 +182,7 @@
     state: present
   when: ansible_os_family == 'Alpine'
   notify: restart docker
-  become: yes
+  become: true
   tags: [docker, docker:install]
 
 # 4. Configuracion de seguridad y logs (Daemon)
@@ -192,7 +192,7 @@
     dest: /etc/docker/daemon.json
     mode: '0644'
   notify: restart docker
-  become: yes
+  become: true
   tags: [docker, docker:config]
 
 # 5. Gestion de usuarios y servicio
@@ -200,15 +200,16 @@
   ansible.builtin.service:
     name: docker
     state: started
-    enabled: yes
-  become: yes
+    enabled: true
+  become: true
   tags: [docker, docker:service]
 
 - name: Add users to docker group
   ansible.builtin.user:
     name: "{{ item }}"
     groups: docker
-    append: yes
+    append: true
   loop: "{{ docker_users | default([ansible_user_id]) }}"
-  become: yes
+  become: true
   tags: [docker, docker:users]
+  

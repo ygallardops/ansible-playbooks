@@ -1,5 +1,5 @@
 ---
-cron_service: crond
+common_cron_service: crond
 
 common_packages:
   - tzdata

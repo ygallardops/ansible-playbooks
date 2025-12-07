@@ -1,7 +1,7 @@
 ---
 - name: Base Server Configuration
   hosts: all
-  become: yes
+  become: true
   roles:
     - bootstrap
     - common
@@ -9,6 +9,6 @@
 
 - name: Docker Host Configuration
   hosts: all
-  become: yes
+  become: true
   roles:
     - docker

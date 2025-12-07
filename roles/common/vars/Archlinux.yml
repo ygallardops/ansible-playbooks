@@ -1,5 +1,5 @@
 ---
-cron_service: cronie
+common_cron_service: cronie
 
 common_packages:
   - curl

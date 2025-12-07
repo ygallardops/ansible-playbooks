@@ -1,7 +1,5 @@
 ---
 docker_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
-repo_distro: "debian"
-
+docker_repo_distro: "debian"
 docker_python_package: "python3-pip"
 docker_service_name: docker
-

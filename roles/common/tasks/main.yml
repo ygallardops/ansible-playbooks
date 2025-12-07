@@ -27,41 +27,41 @@
 # APT
 - name: Update apt cache (Debian/Ubuntu)
   ansible.builtin.apt:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == 'Debian'
-  become: yes
+  become: true
   tags: [common, common:cache]
 
 # DNF (RHEL8+, Fedora, Alma, Rocky)
 - name: Update dnf cache (RedHat family)
   ansible.builtin.dnf:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == 'RedHat'
-  become: yes
+  become: true
   tags: [common, common:cache]
 
 # Arch
 - name: Update pacman cache (Arch)
   community.general.pacman:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == 'Archlinux'
-  become: yes
+  become: true
   tags: [common, common:cache]
 
 # SUSE
 - name: Refresh zypper repos (SUSE)
   community.general.zypper:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == 'Suse'
-  become: yes
+  become: true
   tags: [common, common:cache]
 
 # Alpine
 - name: Update apk cache (Alpine)
   community.general.apk:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family == 'Alpine'
-  become: yes
+  become: true
   tags: [common, common:cache]
 
 # 3. Upgrade opcional (interruptor)
@@ -70,7 +70,7 @@
     name: "*"
     state: latest
   when: common_upgrade_system | default(false) | bool
-  become: yes
+  become: true
   tags: [common, upgrade]
 
 # 4. Instalación de paquetes
@@ -78,13 +78,14 @@
   ansible.builtin.package:
     name: "{{ common_packages }}"
     state: present
-  become: yes
+  become: true
   tags: [common, common:install]
 
 # 5. Configuracion de zona horaria con handler
 - name: Set system timezone to UTC
-  ansible.builtin.timezone:
+  community.general.timezone:
     name: UTC
-  become: yes
+  become: true
   notify: restart cron
   tags: [common, common:config, common:time]
+  

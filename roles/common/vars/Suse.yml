@@ -1,5 +1,5 @@
 ---
-cron_service: cron
+common_cron_service: cron
 
 common_packages:
   - curl

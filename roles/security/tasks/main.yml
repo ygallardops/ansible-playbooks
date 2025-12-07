@@ -1,36 +1,37 @@
 ---
-- name: Install UFW
-  apt:
+- name: Install UFW firewall
+  ansible.builtin.apt:
     name: ufw
     state: present
 
-- name: Allow SSH connections
-  ufw:
+- name: Allow SSH connections through UFW
+  community.general.ufw:
     rule: allow
     name: OpenSSH
 
-- name: Enable UFW
-  ufw:
+- name: Enable UFW firewall
+  community.general.ufw:
     state: enabled
 
 - name: Install Fail2Ban
-  apt:
+  ansible.builtin.apt:
     name: fail2ban
     state: present
 
-- name: Ensure Fail2Ban is running
-  service:
+- name: Ensure Fail2Ban service is running
+  ansible.builtin.service:
     name: fail2ban
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Harden SSH configuration
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     validate: 'sshd -t -f %s'
-  with_items:
+  loop:
     - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
     - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
-  notify: restart ssh
+  notify: Restart ssh
+  

@@ -1,5 +1,5 @@
 ---
-cron_service: cron
+common_cron_service: cron
 
 common_packages:
   - curl
@@ -8,3 +8,4 @@ common_packages:
   - vim
   - iproute2
   - ca-certificates
+  
