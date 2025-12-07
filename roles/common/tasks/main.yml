@@ -73,7 +73,8 @@
   when: common_upgrade_system | default(false) | bool
   become: true
   tags: [common, upgrade]
-
+  # noqa: package-latest
+  
 # 4. Instalación de paquetes
 - name: Install essential common packages
   ansible.builtin.package:

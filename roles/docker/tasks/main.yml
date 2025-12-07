@@ -211,4 +211,3 @@
   loop: "{{ docker_users | default([ansible_user_id]) }}"
   become: true
   tags: [docker, docker:users]
-  
