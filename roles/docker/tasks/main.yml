@@ -90,7 +90,7 @@
     description: Docker CE Stable - $basearch
     baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
     enabled: true
-    gpgcheck: yes
+    gpgcheck: true
     gpgkey: https://download.docker.com/linux/centos/gpg
   when: ansible_os_family == 'RedHat'
   become: true
