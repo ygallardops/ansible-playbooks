@@ -51,6 +51,7 @@
 # SUSE
 - name: Refresh zypper repos (SUSE)
   community.general.zypper:
+    name: '*'
     update_cache: true
   when: ansible_os_family == 'Suse'
   become: true
@@ -88,4 +89,3 @@
   become: true
   notify: restart cron
   tags: [common, common:config, common:time]
-  

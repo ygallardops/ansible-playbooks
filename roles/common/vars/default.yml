@@ -8,4 +8,3 @@ common_packages:
   - vim
   - iproute2
   - ca-certificates
-  

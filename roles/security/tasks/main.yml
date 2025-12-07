@@ -34,4 +34,3 @@
     - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
     - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
   notify: Restart ssh
-  
