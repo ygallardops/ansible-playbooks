@@ -49,6 +49,9 @@
 # BLOQUE DEBIAN / UBUNTU (Gestion segura de Repositorios)
 # ---------------------------------------------------------
 - name: Setup Docker repository (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  become: true
+  tags: [docker, docker:repo]
   block:
     - name: Install apt transport packages
       ansible.builtin.apt:
@@ -77,10 +80,6 @@
         filename: docker
         state: present
         update_cache: true
-
-  when: ansible_os_family == 'Debian'
-  become: true
-  tags: [docker, docker:repo]
 
 # ---------------------------------------------------------
 # BLOQUE REDHAT / CENTOS (Gestion de Repositorios)
