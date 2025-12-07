@@ -29,7 +29,7 @@ El proyecto sigue una arquitectura modular separando lógica (`tasks`), datos in
 ├── inventory.ini           # Inventario de servidores
 ├── site.yml                # Playbook principal (orquestador)
 ├── collections/
-│   └── requirements.yml    # Dependencias externas (community.general)
+│   └── requirements.yml    # Dependencias externas
 ├── roles/
 │   ├── bootstrap/          # Preparación inicial (Python raw install)
 │   ├── common/             # Paquetes base y Timezone
@@ -41,7 +41,11 @@ El proyecto sigue una arquitectura modular separando lógica (`tasks`), datos in
 │   │   ├── handlers/       # Reinicio del servicio Docker
 │   │   ├── tasks/          # Instalación inteligente por familia de SO
 │   │   └── vars/           # Lógica interna (nombres de paquetes, repos)
-│   └── security/           # (En desarrollo) Firewall, SSH Hardening, Fail2ban
+│   └── security/           # Firewall (UFW/Firewalld), SSH Hardening, Fail2ban
+│       ├── defaults/       # Políticas configurables (puertos, root login)
+│       ├── handlers/       # Reinicio de servicios (sshd, firewall)
+│       ├── tasks/          # Lógica de hardening multi-OS
+│       └── vars/           # Nombres de servicios por OS (Debian.yml, RedHat.yml)
 └── .github/
     └── workflows/          # CI/CD (Ansible Lint)
 ```

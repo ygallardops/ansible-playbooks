@@ -31,7 +31,7 @@
 - name: Ensure sshd_config exists
   ansible.builtin.stat:
     path: /etc/ssh/sshd_config
-  register: sshd_conf_file
+  register: security_sshd_conf_file
 
 - name: Configure SSH Daemon
   ansible.builtin.lineinfile:
@@ -40,10 +40,9 @@
     line: "{{ item.line }}"
     validate: 'sshd -t -f %s'
   loop:
-    - { regexp: '^#?PermitRootLogin',         line: "PermitRootLogin {{ security_ssh_permit_root_login }}" }
-    - { regexp: '^#?PasswordAuthentication',  line: "PasswordAuthentication {{ security_ssh_password_authentication }}" }
-    - { regexp: '^#?Port',                    line: "Port {{ security_ssh_port }}" }
-  when: sshd_conf_file.stat.exists
+    - { regexp: '^#?PermitRootLogin', line: "PermitRootLogin {{ security_ssh_permit_root_login }}" }
+    - { regexp: '^#?PasswordAuthentication', line: "PasswordAuthentication {{ security_ssh_password_authentication }}" }
+    - { regexp: '^#?Port', line: "Port {{ security_ssh_port }}" }
   notify: Restart ssh
   become: true
   tags: [security, security:ssh]
@@ -76,6 +75,8 @@
   when:
     - ansible_os_family == 'RedHat'
     - security_enable_firewall | bool
+  become: true
+  tags: [security, security:firewall]
   block:
     - name: Allow defined ports in Firewalld
       ansible.posix.firewalld:
@@ -92,8 +93,6 @@
         name: firewalld
         state: started
         enabled: true
-  become: true
-  tags: [security, security:firewall]
 
 # ============================================
 # 6. Fail2Ban
