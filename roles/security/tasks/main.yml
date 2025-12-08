@@ -81,12 +81,10 @@
     - name: Allow defined ports in Firewalld
       ansible.posix.firewalld:
         # Si es puerto conocido, usa el nombre del servicio.
-        service: "{{ (item == 22 and 'ssh') or (item == 80 and 'http') or (item == 443 and 'https') or omit }}"
-        
+        service: "{{ (item == 22 and 'ssh') or (item == 80 and 'http') or (item == 443 and 'https') or omit }}"       
         # CORRECCIÓN: El '/tcp' ahora esta DENTRO de la logica.
         # Si es un puerto conocido, devuelve 'omit' puro. Si no, devuelve 'numero/tcp'.
-        port: "{{ (item | string ~ '/tcp') if item not in [22, 80, 443] else omit }}"
-        
+        port: "{{ (item | string ~ '/tcp') if item not in [22, 80, 443] else omit }}"    
         permanent: true
         state: enabled
         zone: public

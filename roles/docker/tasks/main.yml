@@ -99,20 +99,13 @@
     - docker_configure_repository | default(true)
   become: true
   tags: [docker, docker:repo]
-
 # NOTA: Arch, Suse y Alpine suelen tener Docker en sus repositorios base o community, 
 # por lo que no configuramos repositorios externos aqui para evitar conflictos.
-
 # 3. Instalacion del plugin Compose
 # Caso A: Debian y RedHat (Docker oficial)
 - name: Install Docker Engine (Debian/RedHat)
   ansible.builtin.package:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
+    name: "{{ docker_packages | default(['docker-ce', 'docker-ce-cli', 'containerd.io', 'docker-buildx-plugin', 'docker-compose-plugin']) }}"
     state: present
   when: ansible_os_family in ['Debian', 'RedHat']
   notify: Restart docker
