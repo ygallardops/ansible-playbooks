@@ -1,0 +1,9 @@
+---
+# Variables específicas para Amazon Linux 2023
+# AL2023 usa dnf y trae curl-minimal por defecto
+common_packages:
+  - curl-minimal
+  - git
+  - htop
+  - tar
+  - unzip

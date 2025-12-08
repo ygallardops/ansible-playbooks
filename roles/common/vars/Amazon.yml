@@ -1,0 +1,8 @@
+---
+# Variables genéricas para Amazon Linux (Aplica a AL2)
+common_packages:
+  - curl
+  - git
+  - htop
+  - tar
+  - unzip

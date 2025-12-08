@@ -27,6 +27,7 @@
   vars:
     lookup_params:
       files:
+        - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
         - "{{ ansible_distribution }}.yml"
         - "{{ ansible_os_family }}.yml"
         - "default.yml"
@@ -38,7 +39,7 @@
 - name: Install Docker prerequisites
   ansible.builtin.package:
     name:
-      - curl
+      - "{{ docker_curl_package | default('curl') }}"
       - git
       - ca-certificates
       - "{{ docker_python_package | default('python3-docker') }}"
@@ -93,11 +94,14 @@
     enabled: true
     gpgcheck: true
     gpgkey: https://download.docker.com/linux/centos/gpg
-  when: ansible_os_family == 'RedHat'
+  when:
+    - ansible_os_family == 'RedHat'
+    - docker_configure_repository | default(true)
   become: true
   tags: [docker, docker:repo]
 
-# NOTA: Arch, Suse y Alpine suelen tener Docker en sus repositorios base o community, por lo que no configuramos repositorios externos aquí para evitar conflictos.
+# NOTA: Arch, Suse y Alpine suelen tener Docker en sus repositorios base o community, 
+# por lo que no configuramos repositorios externos aqui para evitar conflictos.
 
 # 3. Instalacion del plugin Compose
 # Caso A: Debian y RedHat (Docker oficial)

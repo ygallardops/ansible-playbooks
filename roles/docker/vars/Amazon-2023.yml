@@ -1,0 +1,15 @@
+---
+# Amazon Linux 2023 usa curl-minimal y tiene Docker en sus propios repos
+docker_curl_package: curl-minimal
+docker_repo_distro: rhel
+docker_service_name: docker
+# Paquetes nativos de AL2023
+docker_packages:
+  - docker
+  # En AL2023, compose suele instalarse aparte o como plugin si esta disponible.
+  # Por ahora instalamos el motor base.
+
+# Bandera para saltar la configuracion de repos externos
+docker_configure_repository: false
+docker_users:
+  - ec2-user
