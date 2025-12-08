@@ -27,6 +27,7 @@
   vars:
     lookup_params:
       files:
+        - "{{ ansible_distribution }}.yml"
         - "{{ ansible_os_family }}.yml"
         - "default.yml"
       paths:
@@ -96,39 +97,7 @@
   become: true
   tags: [docker, docker:repo]
 
-# ---------------------------------------------------------
-# BLOQUE ARCH (Gestion de Repositorios)
-# ---------------------------------------------------------
-- name: Install Docker (Arch - pacman)
-  community.general.pacman:
-    name: "{{ arch_packages | default(['docker', 'docker-compose']) }}"
-    state: present
-  when: ansible_os_family == 'Archlinux'
-  become: true
-  tags: [docker, docker:install]
-
-# ---------------------------------------------------------
-# BLOQUE SUSE (zypper) (Gestion de Repositorios)
-# ---------------------------------------------------------
-- name: Install Docker (SUSE - zypper)
-  community.general.zypper:
-    name: "{{ suse_packages | default(['docker', 'docker-compose']) }}"
-    state: present
-  when: ansible_os_family == 'Suse'
-  become: true
-  tags: [docker, docker:install]
-
-# ---------------------------------------------------------
-# BLOQUE ALPINE LINUX (apk) (Gestion de Repositorios)
-# ---------------------------------------------------------
-- name: Install Docker (Alpine - apk)
-  community.general.apk:
-    name: "{{ alpine_packages | default(['docker', 'docker-cli', 'containerd']) }}"
-    state: present
-  when: ansible_os_family == 'Alpine'
-  become: true
-  tags: [docker, docker:install]
-
+# NOTA: Arch, Suse y Alpine suelen tener Docker en sus repositorios base o community, por lo que no configuramos repositorios externos aquí para evitar conflictos.
 
 # 3. Instalacion del plugin Compose
 # Caso A: Debian y RedHat (Docker oficial)
@@ -142,7 +111,7 @@
       - docker-compose-plugin
     state: present
   when: ansible_os_family in ['Debian', 'RedHat']
-  notify: restart docker
+  notify: Restart docker
   become: true
   tags: [docker, docker:install]
 
@@ -154,7 +123,7 @@
       - docker-compose
     state: present
   when: ansible_os_family == 'Archlinux'
-  notify: restart docker
+  notify: Restart docker
   become: true
   tags: [docker, docker:install]
 
@@ -166,7 +135,7 @@
       - docker-compose
     state: present
   when: ansible_os_family == 'Suse'
-  notify: restart docker
+  notify: Restart docker
   become: true
   tags: [docker, docker:install]
 
@@ -180,7 +149,7 @@
       - docker-cli-compose # En Alpine a veces es este nombre o docker-compose
     state: present
   when: ansible_os_family == 'Alpine'
-  notify: restart docker
+  notify: Restart docker
   become: true
   tags: [docker, docker:install]
 
@@ -190,7 +159,7 @@
     content: "{{ docker_daemon_options | to_nice_json }}"
     dest: /etc/docker/daemon.json
     mode: '0644'
-  notify: restart docker
+  notify: Restart docker
   become: true
   tags: [docker, docker:config]
 
@@ -211,3 +180,6 @@
   loop: "{{ docker_users | default([ansible_user_id]) }}"
   become: true
   tags: [docker, docker:users]
+
+- name: Reset connection to apply user changes
+  ansible.builtin.meta: reset_connection
